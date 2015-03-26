@@ -4,9 +4,10 @@ import time
 import argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--player1")
-parser.add_argument("--player2")
-parser.add_argument("--timed")
+parser.add_argument("player1")
+parser.add_argument("player2")
+parser.add_argument("--timed",action="store_true")
+args = parser.parse_args()
 
 random.seed(0)
 class Player(object):
@@ -20,6 +21,7 @@ class Player(object):
         self.rolls = []
         self.status = 0
         self.choice = ''
+        self.type = 'Human'
 
 
     def Roll(self):
@@ -80,26 +82,29 @@ class Game(object):
     def turn(self,player):
         player.Turn = True
         while player.Turn == True and player.score < 100:
-            player.choice = raw_input('{}, Hold or Roll? (h/r): '.format(
-                                                            player.name))
-            if player.choice[0].lower() == 'r':
-                player.status = player.Roll()
-                if player.status == 1:
+            if player.type == 'Computer':
+                player.strategy()
+            else:
+                player.choice = raw_input('{}, Hold or Roll? (h/r): '.format(
+                                                                player.name))
+                if player.choice[0].lower() == 'r':
+                    player.status = player.Roll()
+                    if player.status == 1:
+                        player.rolls = []
+                        break
+                    else:
+                        player.rolls.append(player.status)
+                    print 'Roll: {}, Turn total: {}, ' \
+                        'Game total: {}'.format(
+                                player.status,sum(player.rolls),
+                                player.score + sum(player.rolls))
+    
+                if player.choice[0].lower() == 'h':
+                    player.Hold()
                     player.rolls = []
-                    break
-                else:
-                    player.rolls.append(player.status)
-                print 'Roll: {}, Turn total: {}, ' \
-                    'Game total: {}'.format(
-                            player.status,sum(player.rolls),
-                            player.score + sum(player.rolls))
-
-            if player.choice[0].lower() == 'h':
-                player.Hold()
-                player.rolls = []
-                print '{} current score: {}'.format(player.name,player.score)
-                player.Turn = False
-                
+                    print '{} current score: {}'.format(player.name,player.score)
+                    player.Turn = False
+                    
         self.switch(player)
 
                 
@@ -112,15 +117,24 @@ class ComputerPlayer(Player):
 
     def __init__(self):
         Player.__init__(self,'Watson')
+        self.type = 'Computer'
     
-    def strategy():
+    def strategy(self):
         
         while self.Turn == True:
             decide = 25 if (25 < (100 - self.score)) else (100 - self.score)
             if sum(self.rolls) < decide:
-                self.choice = 'r'
+                self.status = self.Roll()
+                if self.status == 1:
+                    self.rolls = []
+                    break
+                else:
+                    self.rolls.append(self.status)
             else:
-                self.choice = 'h'
+                self.Hold()
+                self.rolls = []
+                print '{} current score: {}'.format(self.name,self.score)
+                self.Turn = False
             
 class PlayerFactory(object):
 
@@ -148,29 +162,31 @@ class TimedGameProxy(Game):
             
     def turn(self,player):
         player.Turn = True
-
-        while player.Turn == True and player.score < 100:
-            self.time_check()
-            player.choice = raw_input('{}, Hold or Roll? (h/r): '.format(
-                player.name))
-            if player.choice[0].lower() == 'r':
-                player.status = player.Roll()
-                if player.status == 1:
+        if player.type == 'Computer':
+            player.strategy()
+        else:
+            while player.Turn == True and player.score < 100:
+                self.time_check()
+                player.choice = raw_input('{}, Hold or Roll? (h/r): '.format(
+                    player.name))
+                if player.choice[0].lower() == 'r':
+                    player.status = player.Roll()
+                    if player.status == 1:
+                        player.rolls = []
+                        break
+                    else:
+                        player.rolls.append(player.status)
+                    print 'Roll: {}, Turn total: {}, ' \
+                        'Game total: {}'.format(
+                                player.status,sum(player.rolls),
+                                player.score + sum(player.rolls))
+        
+                if player.choice[0].lower() == 'h':
+                    player.Hold()
                     player.rolls = []
-                    break
-                else:
-                    player.rolls.append(player.status)
-                print 'Roll: {}, Turn total: {}, ' \
-                    'Game total: {}'.format(
-                            player.status,sum(player.rolls),
-                            player.score + sum(player.rolls))
-    
-            if player.choice[0].lower() == 'h':
-                player.Hold()
-                player.rolls = []
-                print '{} current score: {}'.format(player.name,player.score)
-                player.Turn = False
-            
+                    print '{} current score: {}'.format(player.name,player.score)
+                    player.Turn = False
+                
         self.switch(player)
 
 def main():
